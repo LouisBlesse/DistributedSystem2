@@ -13,11 +13,11 @@ public class main {
         sSeat = new Semaphore(15);
         sHairdresser = new Semaphore(4);
         sCreate = new Semaphore(1);
-
         createAll();
         for (int i = 0; i<100; i++){
             creatClient();
-
+            Thread getStyled = creatGetStyled();
+            getStyled.start();
         }
     }
 
@@ -34,42 +34,57 @@ public class main {
     }
 
     public static void creatClient(){
-
-        try {
+        /*try {
             sCreate.acquire();
             sSeat.acquire();
         } catch (InterruptedException e) {
             e.printStackTrace();
-        }
+        }*/
         clientNumber++;
         Client client = new Client(clientNumber);
         clientList.add(client);
         System.out.println("Le client "+clientNumber+" vient d'arriver devant le sallon de coiffure !");
+
+        Thread checkSeat = creatCheackSeat();
         checkSeat.start();
     }
 
-    public static Thread checkSeat = new Thread(){
-        public void run(){
-            for (Seat seat:seatList) {
-                if (seat.occupied == false){
-                    seat.occupied = true;
-                    for (Client client: clientList) {
-                        if (client.id == clientNumber){
-                            client.isIn = true;
-                            System.out.println("Le client "+clientNumber+" est installé sur le siège numéro "+seat.id);
+
+    public static Thread creatCheackSeat(){
+        return new Thread(){
+            public void run(){
+                for (Seat seat:seatList) {
+                    if (seat.occupied == false){
+                        seat.occupied = true;
+                        for (Client client: clientList) {
+                            if (client.id == clientNumber){
+                                client.isIn = true;
+                                System.out.println("Le client "+clientNumber+" est installé sur le siège numéro "+seat.id);
+                            }
                         }
+                        break;
                     }
-                    break;
                 }
+                //sCreate.release();
             }
-            sCreate.release();
-        }
-    };
+        };
+    }
 
-    public static Thread getStyled = new Thread() {
-        public void run() {
-
-        }
-    };
+    public static Thread creatGetStyled(){
+        return new Thread() {
+            public void run() {
+                //sSeat.release();
+                System.out.println("Une place ce libère");
+                seatList.remove(0);
+                Thread checkSeat = creatCheackSeat();
+                checkSeat.start();
+                /*try {
+                    sHairdresser.acquire();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }*/
+            }
+        };
+    }
 
 }
